@@ -23,6 +23,7 @@ class User extends Authenticatable
         'phone',
         'dob',
         'identity_path',
+        'photo_path',
         'last_code',
         'where_know',
         'verify',
