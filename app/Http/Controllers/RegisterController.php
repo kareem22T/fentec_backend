@@ -12,11 +12,13 @@ use App\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Traits\SavePhotoTrait;
+use App\Traits\SendEmailTrait;
 
 class RegisterController extends Controller
 {
     use DataFormController;
     use SavePhotoTrait;
+    use SendEmailTrait;
 
     public function register(Request $request)
     {
@@ -48,7 +50,7 @@ class RegisterController extends Controller
             return
                 $this->jsonData(
                     true,
-                    $createUser->active,
+                    $createuser->verify,
                     'Register successfuly',
                     [],
                     [
@@ -105,7 +107,7 @@ class RegisterController extends Controller
             return
                 $this->jsonData(
                     true,
-                    $user->active,
+                    $user->verify,
                     'Registered successfuly',
                     [],
                     [
@@ -119,8 +121,20 @@ class RegisterController extends Controller
 
     }
 
-    public function login(LoginRequest $request)
+    public function login(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'emailorphone' => 'required',
+            'password' => 'required|min:8',
+        ], [
+            'emailorphone.required' => 'please enter your email or phone number',
+            'password.required' => 'please enter your password',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->jsondata(false, null, 'Login failed', [$validator->errors()->first()], []);
+        }
+
         if (filter_var($request->input('emailorphone'), FILTER_VALIDATE_EMAIL)) {
             $credentials = ['email' => $request->input('emailorphone'), 'password' => $request->input('password')];
         } else {
@@ -130,9 +144,186 @@ class RegisterController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $token = $user->createToken('token')->plainTextToken;
-            return $this->jsonData(true, $user->active, 'Successfully Operation', [], ['token' => $token]);
+            return $this->jsonData(true, $user->verify, 'Successfully Operation', [], ['token' => $token]);
         }
         return $this->jsonData(false, null, 'Faild Operation', ['Your email/phone number or password are incorrect'], []);
+    }
+
+    public function sendVerfication(Request $request)
+    {
+        $code = rand(100000, 999999);
+
+        $user = $request->user();
+        $user->last_code = $code;
+        $user->save();
+
+        $email = $user->email;
+        $msg_title = 'Verfication code';
+        $msg_body = 'Your email verfication code is: <b>' . $code . '</b>';
+
+        $this->sendEmail($email, $msg_title, $msg_body);
+
+        if ($user) :
+            return
+                $this->jsonData(
+                    true,
+                    $user->verify,
+                    'We have sent you a verification code on your email',
+                    [],
+                    [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                    ]
+                );
+        endif;
+    }
+
+    public function activeAccount(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|numeric|digits:6',
+        ], [
+            'code.required' => 'Please enter your verification code',
+            'code.numeric' => 'The code must be a number',
+            'code.digits' => 'The code must be a 6 digits',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->jsondata(false, null, 'Activation failed', [$validator->errors()->first()], []);
+        }
+
+        $user = $request->user();
+
+        if ($request->code == $user->last_code) {
+            $user->verify = true;
+            $user->save();
+
+            if ($user) :
+                return
+                    $this->jsonData(
+                        true,
+                        $user->verify,
+                        'Account has been verified successfuly',
+                        [],
+                        [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'phone' => $user->phone,
+                        ]
+                    );
+            endif;
+        } else {
+            return
+                $this->jsonData(
+                    false,
+                    $user->verify,
+                    'Account faild',
+                    ['The code you entered is not correct, check your email again or click resend'],
+                    [
+                    ]
+                );
+        }
+    }
+
+    public function changePassword(Request $request) {
+        $user = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->jsondata(false, $user->verify, 'Change password failed', [$validator->errors()->first()], []);
+        }
+
+        $currentPassword = $request->old_password;
+
+        if (!Hash::check($currentPassword, $user->password)) {
+            return $this->jsondata(false, $user->verify, 'Change password', ['Incorrect old password'], []);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        if ($user)
+            return $this->jsondata(true, $user->verify, 'You have changed your password successfuly', [], []);
+
+    }
+
+    public function editEmail(Request $request) {
+        $user = $request->user();
+        $validator = Validator::make($request->all(), [
+            'new_email' => 'required',
+        ],[
+            'new_email.required' => 'please write an valid email'
+        ]);
+
+        if ($validator->fails())
+            return $this->jsondata(false, $user->verify, 'Change email failed', [$validator->errors()->first()], []);
+
+        if ($user->email !== $request->new_email):
+            $user->email = $request->new_email;
+            $user->verify = 0;
+            $user->save();
+        endif;
+
+        $user->currentAccessToken()->delete();
+        $token = $user->createToken('token')->plainTextToken;
+
+        if ($user)
+            return 
+                $this->jsondata(
+                    true, 
+                    $user->verify, '
+                    Your email has changed successfully!', 
+                    [], 
+                    [
+                        'name' => $token,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'token' => $token
+                    ]
+                );
+
+    }
+
+    public function editPhone(Request $request) {
+        $user = $request->user();
+        $validator = Validator::make($request->all(), [
+            'new_phone' => 'required',
+        ],[
+            'new_phone.required' => 'please write an valid phone number'
+        ]);
+
+        if ($validator->fails())
+            return $this->jsondata(false, $user->verify, 'Change phone failed', [$validator->errors()->first()], []);
+
+        if ($user->phone !== $request->new_phone):
+            $user->phone = $request->new_phone;
+            $user->save();
+        endif;
+
+        $user->currentAccessToken()->delete();
+        $token = $user->createToken('token')->plainTextToken;
+
+        if ($user)
+            return 
+                $this->jsondata(
+                    true, 
+                    $user->verify, 
+                    'Your phone number has changed successfully!', 
+                    [], 
+                    [
+                        'name' => $token,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'token' => $token
+                    ]
+                );
+
     }
 
     public function getUser(Request $request)
@@ -141,5 +332,17 @@ class RegisterController extends Controller
             return $this->jsonData(true, $request->user()->verify, '', [], ['user' => $request->user()]);
         else
             return $this->jsonData(false, null, 'Account Not Found', [], []);
+    }
+
+    public function logout (Request $request) {
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        if ($user)
+            return $this->jsonData(true, 0, 'Logged out successfuly', [], []);
+        else
+            return $this->jsonData(false, null, 'could not logout', ['Server error try again later'], []);
+
+
     }
 }
