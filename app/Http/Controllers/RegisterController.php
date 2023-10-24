@@ -50,7 +50,7 @@ class RegisterController extends Controller
             return
                 $this->jsonData(
                     true,
-                    $createuser->verify,
+                    $createUser->verify,
                     'Register successfuly',
                     [],
                     [
@@ -118,6 +118,47 @@ class RegisterController extends Controller
                     ]
                 );
         endif;
+
+    }
+
+    public function collectPoints(Request $request)  {
+        $validator = Validator::make($request->all(), [
+            'choice' => 'required',
+            'code' => 'required_id:choice,3',
+        ], [
+            'code.required_if' => 'please enter your friend invetation code',
+            'choice.required' => 'please chose where did you knew about the app.',
+        ]);
+
+        if ($request->choice == 3) {
+            $code = Invetation_code::where('code', $request->code)->first();
+            if (!$code)
+                return $this->jsondata(false, null, 'invaled invetation code', ['Invaled invetation code'], []);
+
+            $request->user()->coins = ((int) $request->user()->coins) + 10;
+            $code->user_owner()->coins = ((int) $code->user_owner()->coins) + 10;
+
+            return
+                $this->jsonData(
+                    true,
+                    $user->verify,
+                    'You have won 10 points',
+                    [],
+                    []
+                );
+
+        } else {
+            $request->user()->coins = ((int) $request->user()->coins) + 10;
+
+            return
+                $this->jsonData(
+                    true,
+                    $user->verify,
+                    'You have won 10 points',
+                    [],
+                    []
+                );
+        }
 
     }
 
