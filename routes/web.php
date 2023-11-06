@@ -18,6 +18,7 @@ use App\Http\Controllers\RegisterController;
 Route::group(['middleware' => ['check_api_password']], function () {
     Route::post('/register', [RegisterController::class, 'register']);
     Route::middleware('auth:sanctum')->post('/register_2', [RegisterController::class, 'register2']);
+    Route::middleware('auth:sanctum')->post('/collect', [RegisterController::class, 'collectPoints']);
     Route::post('/login', [RegisterController::class, 'login']);
     Route::middleware('auth:sanctum')->post('/get-user', [RegisterController::class, 'getUser']);
     Route::middleware('auth:sanctum')->post('/send-code', [RegisterController::class, 'sendVerfication']);

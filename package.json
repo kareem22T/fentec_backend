@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build",
+        "watch_admin": "sass --watch public/dashboard/sass/admin.scss:public/dashboard/css/admin.css --style expanded"
     },
     "devDependencies": {
         "axios": "^1.1.2",

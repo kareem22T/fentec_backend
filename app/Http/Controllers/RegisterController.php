@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Models\Invetation_code;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\DataFormController;
@@ -23,11 +24,12 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'unique:users,email'],
+            'email' => ['required', 'unique:users,email', 'email'],
             'phone' => 'required|unique:users,phone',
             'password' => ['required', 'min:8'],
         ], [
             'email.required' => 'Please enter your email address.',
+            'email.email' => 'Please enter a valid email address.',
             'phone.required' => 'Please enter your phone number.',
             'email.unique' => 'This email address already exists.',
             'phone.unique' => 'This phone number already exists.',
@@ -133,15 +135,18 @@ class RegisterController extends Controller
         if ($request->choice == 3) {
             $code = Invetation_code::where('code', $request->code)->first();
             if (!$code)
-                return $this->jsondata(false, null, 'invaled invetation code', ['Invaled invetation code'], []);
+                return $this->jsondata(false, null, 'invalid invetation code', ['Invaled invetation code'], []);
 
             $request->user()->coins = ((int) $request->user()->coins) + 10;
-            $code->user_owner()->coins = ((int) $code->user_owner()->coins) + 10;
+            $request->user()->save();
+            $user_owner = User::find($code->user_owner->id);
+            $user_owner->coins = ((int) $user_owner->coins) + 10;
+            $user_owner->save();
 
             return
                 $this->jsonData(
                     true,
-                    $user->verify,
+                    true,
                     'You have won 10 points',
                     [],
                     []
@@ -149,11 +154,12 @@ class RegisterController extends Controller
 
         } else {
             $request->user()->coins = ((int) $request->user()->coins) + 10;
+            $request->user()->save();
 
             return
                 $this->jsonData(
                     true,
-                    $user->verify,
+                    true,
                     'You have won 10 points',
                     [],
                     []
