@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Models\Admin;
 use App\Models\Invetation_code;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,18 +95,36 @@ class RegisterController extends Controller
         $user = $request->user();
         $user->name = $request->name;
         $user->dob = $request->dob;
+        $user->approved = 0;
+        $user->rejected = 0;
+        $user->rejection_reason = null;
+        $user->approving_msg_seen = 0;
         
-        if ($request->photo)
+        if ($request->photo) :
             $profile_pic = $this->saveImg($request->photo, 'images/uploads', 'profile' . $user->id);
+            $user->photo_path = $profile_pic;
+        endif;
 
-        if($request->identity)
+        if($request->identity) :
             $identity_pic = $this->saveImg($request->identity, 'images/uploads', 'identity' . $user->id);
-
-        $user->identity_path = $identity_pic;
-        // $user->identity_path = $identity_pic;
+            $user->identity_path = $identity_pic;
+        endif;
         $user->save();
 
         if ($user) :
+            $admins = Admin::all();
+            foreach ($admins as $admin) {
+                $email = $admin->email;
+                $msg_title = 'New Registeration Request';
+                $msg_body = 
+                    $user->name . " is waiting for review their account. <a href=''>Show request</a>" . "<br>" . "<br>" .
+                    "<strong>User Information: </strong>" . "<br>" . 
+                    "Name: " . $user->name . "<br>" .
+                    "Name: " . $user->email . "<br>" .
+                    "Name: " . $user->phone . "<br>";
+
+                $this->sendEmail($email, $msg_title, $msg_body);
+            }
             return
                 $this->jsonData(
                     true,
@@ -375,10 +394,24 @@ class RegisterController extends Controller
 
     public function getUser(Request $request)
     {
-        if ($request->user())
+        if ($request->user()) :
+            if ($request->notification_token) :
+                $request->user()->notification_token = $request->notification_token;
+                $request->user()->save();
+            endif;
             return $this->jsonData(true, $request->user()->verify, '', [], ['user' => $request->user()]);
-        else
+        else :
             return $this->jsonData(false, null, 'Account Not Found', [], []);
+        endif;
+    }
+
+    public function seenApprovingMsg(Request $request)
+    {
+        if ($request->user()) :
+                $request->user()->approving_msg_seen = true;
+                $request->user()->save();
+            return $this->jsonData(true, $request->user()->verify, '', [], []);
+        endif;
     }
 
     public function logout (Request $request) {

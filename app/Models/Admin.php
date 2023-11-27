@@ -21,7 +21,7 @@ class Admin extends Authenticatable
         'full_name',
         'email',
         'password',
-        'role'
+        'role' // do not forget to make emails only sent to whom have the permission
     ];
 
     /**

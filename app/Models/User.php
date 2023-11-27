@@ -27,7 +27,12 @@ class User extends Authenticatable
         'last_code',
         'where_know',
         'verify',
+        'approved',
+        'rejected',
+        'rejection_reason',
+        'approving_msg_seen',
         'password',
+        'notification_token',
     ];
 
     /**

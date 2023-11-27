@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegisterController;
+use ExpoSDK\ExpoMessage;
+use ExpoSDK\Expo;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,9 +28,35 @@ Route::group(['middleware' => ['check_api_password']], function () {
     Route::middleware('auth:sanctum')->post('/change-password', [RegisterController::class, 'changePassword']);
     Route::middleware('auth:sanctum')->post('/edit-email', [RegisterController::class, 'editEmail']);
     Route::middleware('auth:sanctum')->post('/edit-phone', [RegisterController::class, 'editPhone']);
+    Route::middleware('auth:sanctum')->post('/seen-approving-msg', [RegisterController::class, 'seenApprovingMsg']);
     Route::middleware('auth:sanctum')->post('/logout', [RegisterController::class, 'logout']);
 });
 
 Route::get('/', function () {
     return 'welcome';
+});
+
+Route::get('/push', function () {
+/**
+ * Create messages fluently and/or pass attributes to the constructor
+ */
+    $expo = Expo::driver('file');
+    $message = (new ExpoMessage([
+        'title' => 'initial title',
+        'body' => 'initial body',
+    ]))
+    ->setTitle('This title overrides initial title')
+    ->setBody('This notification body overrides initial body')
+    ->setData(['id' => 1])
+    ->setChannelId('default')
+    ->setBadge(0)
+    ->playSound();
+
+    $recipients = [
+        'ExponentPushToken[vr6jOyOAhiawPxDD2xr9_A]',
+    ];
+
+    $response = $expo->send($message)->to($recipients)->push();
+
+    return $response;
 });

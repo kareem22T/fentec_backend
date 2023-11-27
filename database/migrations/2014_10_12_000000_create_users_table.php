@@ -21,9 +21,14 @@ return new class extends Migration
             $table->string('identity_path')->nullable();
             $table->string('last_code')->nullable();
             $table->boolean('verify')->default(0);
+            $table->boolean('approved')->default(0);
+            $table->boolean('approving_msg_seen')->default(0);
+            $table->boolean('rejected')->default(0);
+            $table->text('rejection_reason')->nullable();
             $table->boolean('where_know')->nullable();
             $table->string('password');
             $table->integer('coins')->default(0);
+            $table->string('notification_token', 100)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
