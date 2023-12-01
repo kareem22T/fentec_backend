@@ -9,6 +9,8 @@ Route::middleware(['admin_guest'])->group(function () {
     Route::get('/login', [RegisterController::class, 'getLoginIndex']);
     Route::post('/login', [RegisterController::class, 'login'])->name('admin.login');
 });
+Route::post('/login-seller-marager', [RegisterController::class, 'sellersManagerLogin']);
+Route::middleware('auth:sanctum')->post('/get-admin', [RegisterController::class, 'getAdmin']);
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/', [AdminHomeController::class, 'getIndex'])->name('admin.home');

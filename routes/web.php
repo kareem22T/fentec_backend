@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\Seller\RegisterController as SellerRigisterController;
 use ExpoSDK\ExpoMessage;
 use ExpoSDK\Expo;
 
@@ -30,6 +31,16 @@ Route::group(['middleware' => ['check_api_password']], function () {
     Route::middleware('auth:sanctum')->post('/edit-phone', [RegisterController::class, 'editPhone']);
     Route::middleware('auth:sanctum')->post('/seen-approving-msg', [RegisterController::class, 'seenApprovingMsg']);
     Route::middleware('auth:sanctum')->post('/logout', [RegisterController::class, 'logout']);
+});
+
+Route::group(['middleware' => ['check_api_password'], 'prefix' => 'sellers'], function () {
+    Route::post('/register', [SellerRigisterController::class, 'register']);
+    Route::post('/login', [SellerRigisterController::class, 'login']);
+    Route::middleware('auth:sanctum')->post('/get-user', [SellerRigisterController::class, 'getUser']);
+    Route::middleware('auth:sanctum')->post('/change-password', [SellerRigisterController::class, 'changePassword']);
+    Route::middleware('auth:sanctum')->post('/edit-email', [SellerRigisterController::class, 'editEmail']);
+    Route::middleware('auth:sanctum')->post('/edit-phone', [SellerRigisterController::class, 'editPhone']);
+    Route::middleware('auth:sanctum')->post('/logout', [SellerRigisterController::class, 'logout']);
 });
 
 Route::get('/', function () {
