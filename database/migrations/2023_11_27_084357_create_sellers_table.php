@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('phone');
             $table->text('address');
             $table->text('password');
+            $table->text('unbilled_points')->default(0);
             $table->timestamps();
         });
     }

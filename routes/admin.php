@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\RegisterController;
 use App\Http\Controllers\Admin\AdminHomeController;
 use App\Http\Controllers\Admin\ManageUsersController;
+use App\Http\Controllers\Seller\ManageSellersController;
 
 Route::middleware(['admin_guest'])->group(function () {
     Route::get('/login', [RegisterController::class, 'getLoginIndex']);
@@ -11,6 +12,12 @@ Route::middleware(['admin_guest'])->group(function () {
 });
 Route::post('/login-seller-marager', [RegisterController::class, 'sellersManagerLogin']);
 Route::middleware('auth:sanctum')->post('/get-admin', [RegisterController::class, 'getAdmin']);
+Route::middleware('auth:sanctum')->post('/get-sellers', [ManageSellersController::class, 'getSellers']);
+Route::middleware('auth:sanctum')->post('/reload-seller-points', [ManageSellersController::class, 'reloadPoints']);
+Route::middleware('auth:sanctum')->post('/delete-seller', [ManageSellersController::class, 'deleteSeller']);
+Route::middleware('auth:sanctum')->post('/search-seller', [ManageSellersController::class, 'search']);
+Route::middleware('auth:sanctum')->post('/create-seller', [ManageSellersController::class, 'create']);
+Route::middleware('auth:sanctum')->post('/update-seller', [ManageSellersController::class, 'update']);
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/', [AdminHomeController::class, 'getIndex'])->name('admin.home');

@@ -17,7 +17,8 @@ class Seller  extends Authenticatable
         'email',
         'phone',
         'address',
-        'password'
+        'password',
+        "unbilled_points"
     ];
 
 }
